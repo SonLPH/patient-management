@@ -1,4 +1,16 @@
 ### GET request to get all patients
-GET http://localhost:4004/api/patients
+GET http://localhost:4004/api/patients?page=1&size=2&sortBy=id&ascending=true
 Authorization: Bearer {{token}}
 ###
+
+
+GET http://localhost:4000/patients?page=0&size=2&sortBy=id&ascending=true
+
+###
+GET http://localhost:4000/patients/cursor?size=5
+
+###
+GET http://localhost:4000/patients/cursor?size=5&prevPageCursor=IyMjUGF0aWVudCAxMDUjIyMgLSAyMDI1LTEyLTI0VDE1OjExOjA0LjQwODI4MQ==
+
+###
+GET http://localhost:4000/patients/cursor?size=5&nextPageCursor=IyMjUGF0aWVudCAxMDQjIyMgLSAyMDI1LTEyLTI0VDE1OjEwOjU2LjgxMTY4OA==

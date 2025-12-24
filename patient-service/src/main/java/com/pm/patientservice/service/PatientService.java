@@ -1,5 +1,7 @@
 package com.pm.patientservice.service;
 
+import com.pm.patientservice.cursor.PatientCursor;
+import com.pm.patientservice.dto.CursorPageResponseDTO;
 import com.pm.patientservice.dto.PatientRequestDTO;
 import com.pm.patientservice.dto.PatientResponseDTO;
 import com.pm.patientservice.execption.EmailAlreadyExistsException;
@@ -9,9 +11,14 @@ import com.pm.patientservice.kafka.KafkaProducer;
 import com.pm.patientservice.mapper.PatientMapper;
 import com.pm.patientservice.model.Patient;
 import com.pm.patientservice.repository.PatientRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import javax.swing.*;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,16 +28,40 @@ public class PatientService {
     private final BillingServiceGrpcClient billingServiceGrpcClient;
     private final KafkaProducer kafkaProducer;
 
-    public PatientService(PatientRepository patientRepository, BillingServiceGrpcClient billingServiceGrpcClient, KafkaProducer kafkaProducer) {
+    public PatientService(PatientRepository patientRepository,
+                          BillingServiceGrpcClient billingServiceGrpcClient,
+                          KafkaProducer kafkaProducer) {
         this.patientRepository = patientRepository;
         this.billingServiceGrpcClient = billingServiceGrpcClient;
         this.kafkaProducer = kafkaProducer;
     }
 
-    public List<PatientResponseDTO> getPatients() {
-        List<Patient> patients = patientRepository.findAll();
+    public Page<Patient> getPatients(Pageable pageable) {
+        return patientRepository.findAll(pageable);
+    }
 
-        return patients.stream().map(PatientMapper::toDTO).toList();
+    public CursorPageResponseDTO<List<Patient>> findPage(
+            Specification<Patient> specification,
+            PatientCursor pageable
+    ) {
+        var patientSlice = patientRepository.findAll(specification, Pageable.ofSize(pageable.getSize()));
+
+        if (!patientSlice.hasContent()) {
+            return new CursorPageResponseDTO<>(Collections.emptyList(), null, null);
+        }
+
+        var patients = patientSlice.getContent();
+        return new CursorPageResponseDTO<>(
+                pageable.hasPrev() ? patients.reversed() : patients,
+                pageable.getEncodedCursor(
+                        patients.getFirst().getName(),
+                        patientRepository.existsByNameLessThan(patients.getFirst().getName())
+                ),
+                pageable.getEncodedCursor(
+                        patients.getLast().getName(),
+                        patientSlice.hasNext()
+                )
+        );
     }
 
     public PatientResponseDTO createPatient(PatientRequestDTO patientRequestDTO) {

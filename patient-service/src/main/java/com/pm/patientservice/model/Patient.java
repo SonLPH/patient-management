@@ -1,5 +1,6 @@
 package com.pm.patientservice.model;
 
+import com.pm.patientservice.model.base.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -8,7 +9,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-public class Patient {
+public class Patient extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
